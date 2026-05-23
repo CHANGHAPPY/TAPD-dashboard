@@ -59,8 +59,10 @@ const App = {
 
     /** 主渲染 */
     render() {
-        const existing = document.getElementById('parentList');
-        if (existing) existing.remove();
+        ['parentList', 'progressList', 'overdueList', 'bugList'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        });
         const D = this.allData.data[this.currentIterId];
         if (!D) return;
 
@@ -70,6 +72,16 @@ const App = {
 
         this.renderSummary(D);
         this.setupParentClick(D);
+        this.setupProgressClick(D, it);
+        this.setupOverdueClick(D);
+        this.setupBugClick(D);
+        // 默认展开（按插入顺序：先完成率，再延期，最后缺陷）
+        ['bugList', 'overdueList', 'progressList'].forEach(id => {
+            if (!document.getElementById(id)) {
+                const el = {progressList: 'progressStat', overdueList: 'overdueStat', bugList: 'bugStat'}[id];
+                document.getElementById(el)?.click();
+            }
+        });
         this.renderInsights(D, it);
     },
 
@@ -87,30 +99,94 @@ const App = {
         document.getElementById('summary').innerHTML =
             `<div class="stat stat-sub stat-clickable" id="parentStat"><div class="num">${parentCount}</div><div class="label">主需求 &#9662;</div></div>
             <div class="stat stat-sub"><div class="num">${childCount}</div><div class="label">子需求</div></div>
-            <div class="stat"><div class="num">${pct}%</div><div class="label">完成率</div></div>
-            <div class="stat"><div class="num" style="color:var(--red)">${D.overdue_count}</div><div class="label">延期</div></div>
-            <div class="stat"><div class="num" style="color:var(--purple)">${D.open_bugs || 0}</div><div class="label">缺陷</div></div>
+            <div class="stat stat-clickable" id="progressStat"><div class="num">${pct}%</div><div class="label">完成率 &#9662;</div></div>
+            <div class="stat stat-clickable" id="overdueStat"><div class="num" style="color:var(--red)">${D.overdue_count}</div><div class="label">延期 &#9662;</div></div>
+            <div class="stat stat-clickable" id="bugStat"><div class="num" style="color:var(--purple)">${D.open_bugs || 0}</div><div class="label">缺陷 &#9662;</div></div>
             <div class="stat"><div class="num">${Object.keys(D.workload).length}</div><div class="label">参与人员</div></div>`;
+    },
+
+    /** 通用展开/收起 */
+    toggleExpand(id, buildContent) {
+        const existing = document.getElementById(id);
+        if (existing) { existing.remove(); return; }
+        const div = document.createElement('div');
+        div.id = id;
+        div.className = 'parent-list';
+        div.innerHTML = buildContent();
+        document.getElementById('summary').after(div);
     },
 
     /** 主需求点击展开 */
     setupParentClick(D) {
         const el = document.getElementById('parentStat');
         if (!el) return;
-        el.onclick = () => {
-            const existing = document.getElementById('parentList');
-            if (existing) { existing.remove(); return; }
+        el.onclick = () => this.toggleExpand('parentList', () => {
             const parents = (D.parent_stories || []).filter(p => p.is_open);
-            if (parents.length === 0) return;
+            if (parents.length === 0) return '';
             const items = parents.map(p =>
                 `<li>${esc(p.name)} <span class="tag tag-gray">${esc(p.owner || '未分配')}</span></li>`
             ).join('');
-            const div = document.createElement('div');
-            div.id = 'parentList';
-            div.className = 'parent-list';
-            div.innerHTML = `<div class="parent-list-title">未完成主需求 (${parents.length}个)</div><ul>${items}</ul>`;
-            document.getElementById('summary').after(div);
-        };
+            return `<div class="parent-list-title">未完成主需求 (${parents.length}个)</div><ul>${items}</ul>`;
+        });
+    },
+
+    /** 完成率点击展开 */
+    setupProgressClick(D, it) {
+        const el = document.getElementById('progressStat');
+        if (!el) return;
+        el.onclick = () => this.toggleExpand('progressList', () => {
+            const parentAll = D.parent_story_count_all || D.parent_story_count || 0;
+            const parentDone = parentAll - (D.parent_story_count || 0);
+            const childAll = D.total_stories || 0;
+            const childDone = childAll - (D.open_stories || 0);
+            const totalAll = parentAll + childAll;
+            const totalDone = parentDone + childDone;
+            const pct = totalAll > 0 ? Math.round(totalDone / totalAll * 100) : 0;
+            let msg = '';
+            if (pct < 30 && it && it.enddate) msg = `进度偏慢，截止 ${it.enddate}。建议评估排期。`;
+            else if (pct >= 80) msg = '进度良好。';
+            else msg = '进度正常，按节奏推进。';
+            return `<div class="parent-list-title">完成率 ${pct}%</div>
+                <ul><li>已完成主需求 ${parentDone} / 全部 ${parentAll}</li>
+                <li>已完成子需求 ${childDone} / 全部 ${childAll}</li>
+                <li>合计已完成 ${totalDone} / 全部 ${totalAll}</li></ul>
+                <div style="margin-top:4px;font-size:13px">${msg}</div>`;
+        });
+    },
+
+    /** 延期点击展开 */
+    setupOverdueClick(D) {
+        const el = document.getElementById('overdueStat');
+        if (!el) return;
+        el.onclick = () => this.toggleExpand('overdueList', () => {
+            const overdue = D.overdue || [];
+            if (overdue.length === 0) return '<div class="parent-list-title">无延期需求</div>';
+            const owners = {};
+            overdue.forEach(o => owners[o.owner] = (owners[o.owner] || 0) + 1);
+            const topNames = Object.entries(owners).sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => `${esc(e[0])}(${e[1]}个)`).join(', ');
+            const items = overdue.slice(0, 8).map(o =>
+                `<li>${esc(o.name)} <span class="tag tag-red">${o.due}</span> <span class="tag tag-gray">${esc(o.owner || '未分配')}</span></li>`
+            ).join('');
+            return `<div class="parent-list-title">${overdue.length} 个需求已延期</div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:4px">集中在 ${topNames}</div>
+                <ul>${items}${overdue.length > 8 ? `<li><small>...还有 ${overdue.length - 8} 个</small></li>` : ''}</ul>`;
+        });
+    },
+
+    /** 缺陷点击展开 */
+    setupBugClick(D) {
+        const el = document.getElementById('bugStat');
+        if (!el) return;
+        el.onclick = () => this.toggleExpand('bugList', () => {
+            const severe = D.severe_bugs || [];
+            if (severe.length === 0) return `<div class="parent-list-title">无严重缺陷</div><div style="font-size:12px;color:var(--muted)">共 ${D.open_bugs || 0} 个未关闭缺陷，无高优/紧急缺陷</div>`;
+            const items = severe.map(b =>
+                `<li>${esc(b.title)} <span class="tag tag-red">${esc(b.severity)}</span> <span class="tag tag-gray">${esc(b.owner || '未分配')}</span></li>`
+            ).join('');
+            return `<div class="parent-list-title">${severe.length} 个严重缺陷</div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:4px">共 ${D.open_bugs || 0} 个未关闭缺陷，其中高优/紧急如下</div>
+                <ul>${items}</ul>`;
+        });
     },
 
     /** 智能洞察 */
@@ -135,23 +211,6 @@ const App = {
             });
         }
 
-        // 2. 延期未关闭
-        if (D.overdue_count > 0) {
-            const owners = {};
-            D.overdue.forEach(o => owners[o.owner] = (owners[o.owner] || 0) + 1);
-            const topNames = Object.entries(owners)
-                .sort((a, b) => b[1] - a[1]).slice(0, 3);
-            const items = D.overdue.slice(0, 5).map(o =>
-                `<li>${esc(o.name)} <span class="tag tag-red">${o.due}</span> <span class="tag tag-gray">${esc(o.owner || '未分配')}</span></li>`
-            ).join('');
-            const topList = topNames.map(e => `${esc(e[0])}(${e[1]}个)`).join(', ');
-            alerts.push({
-                cls: 'alert-red',
-                title: `${D.overdue_count} 个需求已延期`,
-                body: `集中在 ${topList}。<ul>${items}${D.overdue.length > 5 ? `<li><small>...还有 ${D.overdue.length - 5} 个</small></li>` : ''}</ul>`
-            });
-        }
-
         // 1.5 优先推进Bug修复（BUG修复中且已延期）
         const bfpCount = D.bug_fix_priority_count || 0;
         if (bfpCount > 0) {
@@ -163,15 +222,6 @@ const App = {
                 title: `${bfpCount} 个需求优先推进Bug修复`,
                 body: `以下需求状态为"BUG修复中"且已超过截止日期：<ul>${bfpItems}${(D.bug_fix_priority || []).length > 5 ? `<li><small>...还有 ${D.bug_fix_priority.length - 5} 个</small></li>` : ''}</ul>`
             });
-        }
-
-        // 进度评估
-        if (D.total_stories > 0 && it) {
-            if (pct < 30 && it.enddate) {
-                alerts.push({ cls: 'alert-yellow', title: '进度偏慢', body: `完成率 ${pct}%，截止 ${it.enddate}。建议评估排期。` });
-            } else if (pct >= 80) {
-                alerts.push({ cls: 'alert-green', title: '进度良好', body: `完成率 ${pct}%。` });
-            }
         }
 
         if (alerts.length === 0) {

@@ -4,7 +4,16 @@
       "mcp__Claude_in_Chrome__tabs_create_mcp",
       "WebFetch(domain:localhost)",
       "Bash(curl -s http://localhost:8080)",
-      "Bash(curl -s http://localhost:8080/data.js)"
+      "Bash(curl -s http://localhost:8080/data.js)",
+      "Bash(node -c /Users/trinity/Desktop/TAPD/app.js)",
+      "Bash(cp /Users/trinity/Desktop/TAPD/fetch.py /Users/trinity/Desktop/TAPD/app.js /tmp/claude/tapd/)",
+      "Bash(python3 /tmp/claude/tapd/build.py)",
+      "Bash(python3 -c ' *)",
+      "Bash(cp /tmp/claude/tapd/data.js /Users/trinity/Desktop/TAPD/data.js)",
+      "Bash(cp /Users/trinity/Desktop/TAPD/app.js /tmp/claude/tapd/ && echo synced)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }

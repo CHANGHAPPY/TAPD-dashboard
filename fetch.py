@@ -96,14 +96,14 @@ def analyze_iteration(iteration_id):
     overdue.sort(key=lambda x: x['due'])
     bug_fix_priority.sort(key=lambda x: x['due'])
 
-    # 严重缺陷
+    # 严重缺陷（优先高/紧急且未关闭）
     severe = []
     for b in bugs:
-        if b.get('severity', '') in ['fatal', 'serious'] and b['status'] not in CLOSED_BUG:
+        if b.get('priority', '') in ['high', 'urgent'] and b['status'] not in CLOSED_BUG:
             severe.append({
                 'id': b['id'], 'title': b.get('title', '')[:60],
                 'owner': (b.get('owner') or '').strip().rstrip(';'),
-                'severity': b['severity'],
+                'severity': b['priority'],
                 'status': BUG_STATUS.get(b['status'], b['status'])
             })
 
