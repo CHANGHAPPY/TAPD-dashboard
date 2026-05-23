@@ -43,24 +43,142 @@ const App = {
         this.render();
     },
 
+    /** 聚合全部迭代数据 */
+    buildAllData() {
+        const result = {
+            total_stories: 0, total_bugs: 0, open_stories: 0, open_bugs: 0,
+            overdue_count: 0, late_closed_count: 0, severe_count: 0,
+            parent_story_count: 0, parent_story_count_all: 0, child_story_count: 0,
+            unassigned_stories: 0, unassigned_bugs: 0,
+            bug_fix_priority_count: 0, pending_review_count: 0,
+            overdue: [], severe_bugs: [], bug_fix_priority: [], pending_review: [],
+            parent_stories: [], workload: {}, status_dist: {}
+        };
+        const allParents = new Map();
+        for (const iid in this.allData.data) {
+            const d = this.allData.data[iid];
+            result.total_stories += d.total_stories || 0;
+            result.total_bugs += d.total_bugs || 0;
+            result.open_stories += d.open_stories || 0;
+            result.open_bugs += d.open_bugs || 0;
+            result.overdue_count += d.overdue_count || 0;
+            result.late_closed_count += d.late_closed_count || 0;
+            result.severe_count += d.severe_count || 0;
+            result.parent_story_count += d.parent_story_count || 0;
+            result.parent_story_count_all += d.parent_story_count_all || 0;
+            result.child_story_count += d.child_story_count || 0;
+            result.unassigned_stories += d.unassigned_stories || 0;
+            result.unassigned_bugs += d.unassigned_bugs || 0;
+            result.bug_fix_priority_count += d.bug_fix_priority_count || 0;
+            result.pending_review_count += d.pending_review_count || 0;
+            if (d.overdue) result.overdue.push(...d.overdue);
+            if (d.severe_bugs) result.severe_bugs.push(...d.severe_bugs);
+            if (d.bug_fix_priority) result.bug_fix_priority.push(...d.bug_fix_priority);
+            if (d.pending_review) result.pending_review.push(...d.pending_review);
+            for (const ps of (d.parent_stories || [])) {
+                if (!allParents.has(ps.id)) allParents.set(ps.id, ps);
+                else if (ps.is_open) allParents.set(ps.id, ps);
+            }
+            for (const [k, v] of Object.entries(d.workload || {})) {
+                const w = result.workload[k] || { stories: 0, bugs: 0, late: 0 };
+                w.stories += v.stories || 0;
+                w.bugs += v.bugs || 0;
+                w.late += v.late || 0;
+                result.workload[k] = w;
+            }
+        }
+        result.parent_stories = [...allParents.values()];
+        result.overdue.sort((a, b) => (a.due || '').localeCompare(b.due || ''));
+        return result;
+    },
+
     /** 填充侧边栏迭代列表 */
     setupIterSelector() {
         const sidebar = document.getElementById('sidebar');
-        sidebar.innerHTML = '';
+        const savedOrder = this.loadOrder();
+
+        // 全部迭代汇总
+        let allStories = 0, allBugs = 0;
         this.allData.iterations.forEach(it => {
             const d = this.allData.data[it.id] || {};
+            allStories += (d.open_stories || 0);
+            allBugs += (d.open_bugs || 0);
+        });
+
+        const items = [
+            { id: '__all__', name: '全部迭代', stories: allStories, bugs: allBugs }
+        ];
+        // 按保存的顺序排列（过滤掉已不存在的）
+        const idToIter = {};
+        this.allData.iterations.forEach(it => { idToIter[it.id] = it; });
+        (savedOrder || []).forEach(id => {
+            if (idToIter[id]) items.push({ id, name: idToIter[id].name, stories: idToIter[id].stories, bugs: idToIter[id].bugs });
+        });
+        // 加上新出现的迭代
+        this.allData.iterations.forEach(it => {
+            if (!items.find(x => x.id === it.id)) items.push({ id: it.id, name: it.name });
+        });
+        // 填充 stories/bugs 计数
+        items.forEach(item => {
+            if (item.stories === undefined) {
+                const d = this.allData.data[item.id] || {};
+                item.stories = d.open_stories || 0;
+                item.bugs = d.open_bugs || 0;
+            }
+        });
+
+        sidebar.innerHTML = '';
+        items.forEach((item, index) => {
             const btn = document.createElement('button');
             btn.className = 'sidebar-item';
-            btn.innerHTML = `${it.name}<br><span class="count">${d.total_stories || 0}需求 ${d.total_bugs || 0}缺陷</span>`;
+            btn.draggable = true;
+            btn.dataset.id = item.id;
+            btn.innerHTML = `${item.name}<br><span class="count">${item.stories}需求 ${item.bugs}缺陷</span>`;
             btn.onclick = () => {
-                this.currentIterId = it.id;
+                if (item.id === '__all__') {
+                    this.currentIterId = null;
+                } else {
+                    this.currentIterId = item.id;
+                }
                 this.render();
                 sidebar.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
             };
-            if (it.id === this.currentIterId) btn.classList.add('active');
+            // 拖拽事件
+            btn.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', String(index));
+                btn.classList.add('dragging');
+            });
+            btn.addEventListener('dragend', () => { btn.classList.remove('dragging'); });
+            btn.addEventListener('dragover', (e) => { e.preventDefault(); });
+            btn.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+                if (fromIdx !== index && item.id !== '__all__') {
+                    const btns = [...sidebar.querySelectorAll('.sidebar-item')];
+                    const fromBtn = btns[fromIdx];
+                    if (fromBtn.dataset.id === '__all__') return; // 不能拖"全部"
+                    if (index > fromIdx) {
+                        btn.after(fromBtn);
+                    } else {
+                        btn.before(fromBtn);
+                    }
+                    this.saveOrder();
+                }
+            });
+
+            const isActive = (item.id === '__all__' && this.currentIterId === null) || item.id === this.currentIterId;
+            if (isActive) btn.classList.add('active');
             sidebar.appendChild(btn);
         });
+    },
+
+    loadOrder() {
+        try { return JSON.parse(localStorage.getItem('tapd_iter_order') || 'null'); } catch { return null; }
+    },
+    saveOrder() {
+        const ids = [...document.querySelectorAll('.sidebar-item')].map(b => b.dataset.id).filter(id => id !== '__all__');
+        localStorage.setItem('tapd_iter_order', JSON.stringify(ids));
     },
 
     /** 主渲染 */
@@ -69,12 +187,13 @@ const App = {
             const el = document.getElementById(id);
             if (el) el.remove();
         });
-        const D = this.allData.data[this.currentIterId];
+        const D = this.currentIterId ? this.allData.data[this.currentIterId] : this.buildAllData();
         if (!D) return;
 
-        const it = this.allData.iterations.find(i => i.id === this.currentIterId);
-        document.getElementById('dateLine').textContent =
-            `${it ? it.startdate + ' ~ ' + it.enddate : ''} | 预加载数据 | 点右上角刷新获取最新`;
+        const it = this.currentIterId ? this.allData.iterations.find(i => i.id === this.currentIterId) : null;
+        document.getElementById('dateLine').textContent = this.currentIterId
+            ? `${it ? it.startdate + ' ~ ' + it.enddate : ''} | 预加载数据 | 点右上角刷新获取最新`
+            : `全部迭代汇总 | ${this.allData.iterations.length} 个迭代 | 预加载数据`;
 
         this.renderSummary(D);
         this.setupParentClick(D);
@@ -338,8 +457,9 @@ const App = {
             this.allData = newData;
             this.normalizeData(this.allData);
             this.setupIterSelector();
-            const curId = this.currentIterId;
-            if (!this.allData.data[curId]) this.currentIterId = this.allData.iterations[0].id;
+            if (this.currentIterId && !this.allData.data[this.currentIterId]) {
+                this.currentIterId = this.allData.iterations[0].id;
+            }
             this.render();
             document.getElementById('dateLine').textContent += ' | 已刷新 (' + new Date().toLocaleTimeString() + ')';
         } catch (e) {

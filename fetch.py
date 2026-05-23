@@ -164,8 +164,7 @@ def analyze_iteration(iteration_id):
                     'is_open': ps['id'] in parent_ids_open
                 })
 
-    # 推进策划验收：父需求下所有未关闭子需求都在测试验收/策划验收阶段
-    REVIEW_STATUSES = {'status_6', 'status_7'}
+    # 推进策划验收：父需求下有且仅有【策划验收】和【测试验收】两个未关闭子需求
     parent_children = {}  # parent_id -> [open child stories]
     for s in stories:
         pid = (s.get('parent_id') or '').strip()
@@ -174,19 +173,23 @@ def analyze_iteration(iteration_id):
     pending_review = []
     parent_map = {ps['id']: ps for ps in parent_stories}
     for pid, children in parent_children.items():
-        if all(c['status'] in REVIEW_STATUSES for c in children):
-            ps = parent_map.get(pid)
-            pending_review.append({
-                'id': pid,
-                'name': ps['name'][:60] if ps else '(未知主需求)',
-                'owner': ps['owner'] if ps else '',
-                'child_count': len(children),
-                'children': [{
-                    'id': c['id'], 'name': c['name'][:60],
-                    'status': STORY_STATUS.get(c['status'], c['status']),
-                    'owner': (c.get('owner') or '').strip().rstrip(';')
-                } for c in children[:10]]
-            })
+        if len(children) == 2:
+            names = [c['name'] for c in children]
+            has_review = any('策划验收' in n for n in names)
+            has_test = any('测试验收' in n for n in names)
+            if has_review and has_test:
+                ps = parent_map.get(pid)
+                pending_review.append({
+                    'id': pid,
+                    'name': ps['name'][:60] if ps else '(未知主需求)',
+                    'owner': ps['owner'] if ps else '',
+                    'child_count': 2,
+                    'children': [{
+                        'id': c['id'], 'name': c['name'][:60],
+                        'status': STORY_STATUS.get(c['status'], c['status']),
+                        'owner': (c.get('owner') or '').strip().rstrip(';')
+                    } for c in children]
+                })
     pending_review.sort(key=lambda x: x['name'])
 
     # 缺陷列表
