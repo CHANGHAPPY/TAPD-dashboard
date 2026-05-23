@@ -152,8 +152,8 @@ def analyze_iteration(iteration_id):
     parent_stories = []
     if parent_ids_all:
         pids = list(parent_ids_all)
-        for i in range(0, len(pids), 50):
-            batch = ','.join(pids[i:i+50])
+        for i in range(0, len(pids), 30):
+            batch = ','.join(pids[i:i+30])
             resp = fetch(f'https://api.tapd.cn/stories?workspace_id={WORKSPACE_ID}&id={batch}')
             for item in resp.get('data', []):
                 ps = item['Story']
