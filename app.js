@@ -209,12 +209,12 @@ const App = {
 
     /** 主渲染 */
     render() {
-        // 记录哪些面板是打开状态
+        // 记录哪些面板是打开状态（首次默认展开延期）
         if (!this.openPanels) this.openPanels = new Set(['overdueList']);
         const panelIds = ['parentList', 'progressList', 'overdueList', 'bugList', 'personnelList', 'childList'];
         panelIds.forEach(id => {
             if (document.getElementById(id)) this.openPanels.add(id);
-            else this.openPanels.delete(id);
+            // 不在 DOM 里的不删，保留默认值
         });
 
         panelIds.forEach(id => {
