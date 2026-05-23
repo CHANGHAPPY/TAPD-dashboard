@@ -145,6 +145,7 @@ body {
 .parent-list.panel-red    { background: var(--red-bg);    border-color: var(--red-border); }
 .parent-list.panel-yellow { background: var(--yellow-bg); border-color: var(--yellow-border); }
 .parent-list.panel-stone  { background: #fafaf9; border-color: #e7e5e4; }
+.parent-list.panel-rose  { background: #fff1f2; border-color: #fecdd3; }
 
 .chart-legend { display: flex; gap: 16px; justify-content: center; margin-top: 8px; }
 .legend-item { cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; user-select: none; }

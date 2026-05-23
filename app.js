@@ -209,7 +209,7 @@ const App = {
 
     /** 主渲染 */
     render() {
-        ['parentList', 'progressList', 'overdueList', 'bugList', 'personnelList'].forEach(id => {
+        ['parentList', 'progressList', 'overdueList', 'bugList', 'personnelList', 'childList'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.remove();
         });
@@ -227,6 +227,7 @@ const App = {
         this.setupOverdueClick(D);
         this.setupBugClick(D);
         this.setupPersonnelClick(D);
+        this.setupChildClick(D);
         // 默认只展开延期
         if (!document.getElementById('overdueList')) {
             document.getElementById('overdueStat')?.click();
@@ -247,7 +248,7 @@ const App = {
         const childCount = D.child_story_count || D.open_stories || 0;
         document.getElementById('summary').innerHTML =
             `<div class="stat stat-sub stat-clickable stat-parent" id="parentStat"><div class="num">${parentCount}</div><div class="label">主需求 ▾</div></div>
-            <div class="stat stat-sub"><div class="num">${childCount}</div><div class="label">子需求</div></div>
+            <div class="stat stat-sub stat-clickable" id="childStat"><div class="num">${childCount}</div><div class="label">子需求 ▾</div></div>
             <div class="stat stat-clickable stat-green" id="progressStat"><div class="num">${pct}%</div><div class="label">完成率 ▾</div></div>
             <div class="stat stat-clickable stat-red" id="overdueStat"><div class="num" style="color:var(--red)">${D.overdue_count}</div><div class="label">延期 ▾</div></div>
             <div class="stat stat-clickable stat-yellow" id="bugStat"><div class="num" style="color:var(--purple)">${D.open_bugs || 0}</div><div class="label">缺陷 ▾</div></div>
@@ -418,6 +419,99 @@ const App = {
                     meta.hidden = !meta.hidden;
                     this.classList.toggle('legend-off', meta.hidden);
                     chart.update();
+                });
+            });
+        };
+    },
+
+    /** 子需求分类饼图 */
+    setupChildClick(D) {
+        const el = document.getElementById('childStat');
+        if (!el) return;
+        el.onclick = () => {
+            const listId = 'childList';
+            const statId = 'childStat';
+            const existing = document.getElementById(listId);
+            if (existing) {
+                const oldChart = Chart.getChart('childPieChart');
+                if (oldChart) oldChart.destroy();
+                existing.remove();
+                const stat = document.getElementById(statId);
+                if (stat) { stat.classList.remove('stat-expanded'); const lb = stat.querySelector('.label'); if (lb) lb.innerHTML = lb.innerHTML.replace('▴', '▾'); }
+                return;
+            }
+            const stat = document.getElementById(statId);
+            if (stat) { stat.classList.add('stat-expanded'); const lb = stat.querySelector('.label'); if (lb) lb.innerHTML = lb.innerHTML.replace('▾', '▴'); }
+
+            // 子需求分类规则
+            const CATEGORIES = [
+                { key: '策划需求', pattern: '文档编辑', color: '#f97316' },
+                { key: '前端', pattern: '前端开发', color: '#3b82f6' },
+                { key: '后端', pattern: '后端开发', color: '#6366f1' },
+                { key: 'UI', pattern: 'UI设计', color: '#ec4899' },
+                { key: '测试验收', pattern: '测试验收', color: '#14b8a6' },
+                { key: '策划验收', pattern: '策划验收', color: '#8b5cf6' },
+                { key: '美术', pattern: null, color: '#a1a1aa' }
+            ];
+            const counts = {};
+            CATEGORIES.forEach(c => { counts[c.key] = 0; });
+            const stories = D.stories || [];
+            stories.forEach(s => {
+                if (s.is_closed) return;
+                let matched = false;
+                for (const cat of CATEGORIES) {
+                    if (cat.pattern && s.name.includes(cat.pattern)) {
+                        counts[cat.key]++; matched = true; break;
+                    }
+                }
+                if (!matched) counts['美术']++;
+            });
+            const entries = CATEGORIES.filter(c => counts[c.key] > 0);
+
+            const div = document.createElement('div');
+            div.id = listId;
+            div.className = 'parent-list panel-rose';
+            div.innerHTML = `<div class="parent-list-title">子需求分类 (${stories.filter(s => !s.is_closed).length}个)</div>
+                <div style="height:260px;position:relative"><canvas id="childPieChart"></canvas></div>
+                <div class="chart-legend">${entries.map(c =>
+                    `<span class="legend-item" data-key="${c.key}"><span class="legend-dot" style="background:${c.color}"></span> ${c.key} (${counts[c.key]})</span>`
+                ).join('')}</div>`;
+            document.getElementById('summary').after(div);
+
+            const ctx = document.getElementById('childPieChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: entries.map(c => c.key),
+                    datasets: [{ data: entries.map(c => counts[c.key]), backgroundColor: entries.map(c => c.color), borderWidth: 1 }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw}个 (${Math.round(ctx.raw / entries.reduce((s, c) => s + counts[c.key], 0) * 100)}%)` } }
+                    }
+                }
+            });
+
+            // 图例点击切换
+            div.querySelectorAll('.legend-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const key = this.dataset.key;
+                    const chart = Chart.getChart('childPieChart');
+                    const idx = chart.data.labels.indexOf(key);
+                    if (idx >= 0) {
+                        const meta = chart.getDatasetMeta(0);
+                        meta.hidden = meta.hidden || [];
+                        if (meta.hidden.includes(idx)) {
+                            meta.hidden = meta.hidden.filter(i => i !== idx);
+                        } else {
+                            meta.hidden.push(idx);
+                        }
+                        this.classList.toggle('legend-off', meta.hidden.includes(idx));
+                        chart.update();
+                    }
                 });
             });
         };
