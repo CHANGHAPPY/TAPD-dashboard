@@ -102,7 +102,7 @@ def analyze_iteration(iteration_id):
         if b.get('priority', '') in ['high', 'urgent'] and b['status'] not in CLOSED_BUG:
             severe.append({
                 'id': b['id'], 'title': b.get('title', '')[:60],
-                'owner': (b.get('owner') or '').strip().rstrip(';'),
+                'owner': (b.get('current_owner') or b.get('owner') or '').strip().rstrip(';'),
                 'severity': b['priority'],
                 'status': BUG_STATUS.get(b['status'], b['status'])
             })
@@ -118,7 +118,7 @@ def analyze_iteration(iteration_id):
         if s['status'] not in CLOSED_STORY:
             wl.setdefault(owner, {'stories': 0, 'bugs': 0, 'late': 0})['stories'] += 1
     for b in bugs:
-        owner = (b.get('owner') or '').strip().rstrip(';')
+        owner = (b.get('current_owner') or b.get('owner') or '').strip().rstrip(';')
         if not owner:
             if b['status'] not in CLOSED_BUG:
                 unassigned_b += 1
@@ -192,7 +192,7 @@ def analyze_iteration(iteration_id):
     # 缺陷列表
     bug_list = [{
         'id': b['id'], 'title': b.get('title', '')[:80],
-        'owner': (b.get('owner') or '').strip().rstrip(';'),
+        'owner': (b.get('current_owner') or b.get('owner') or '').strip().rstrip(';'),
         'status': BUG_STATUS.get(b['status'], b['status']),
         'is_closed': b['status'] in CLOSED_BUG,
         'severity': b.get('severity', '') or ''
