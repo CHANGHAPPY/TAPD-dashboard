@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_in_Chrome__tabs_create_mcp",
+      "WebFetch(domain:localhost)",
+      "Bash(curl -s http://localhost:8080)",
+      "Bash(curl -s http://localhost:8080/data.js)"
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TAPD 项目洞察</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:12px">
+    <h1>TAPD 项目洞察</h1>
+    <select id="iterSelect"></select>
+  </div>
+  <button class="btn" id="btnRefresh" onclick="App.refresh()">刷新</button>
+</div>
+
+<div class="container">
+  <div class="date-line" id="dateLine"></div>
+  <div class="summary" id="summary"></div>
+  <div id="alerts"></div>
+</div>
+
+<!-- 预加载数据（由 fetch.py 生成） -->
+<script src="data.js"></script>
+
+<!-- 核心逻辑 -->
+<script src="app.js"></script>
+
+</body>
+</html>

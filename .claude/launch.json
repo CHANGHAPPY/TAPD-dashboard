@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "tapd-server",
+      "runtimeExecutable": "/usr/bin/python3",
+      "runtimeArgs": ["/tmp/claude/tapd/server.py"],
+      "port": 8080
+    }
+  ]
+}

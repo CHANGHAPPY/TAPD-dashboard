@@ -1,0 +1,16 @@
+# TAPD API 认证凭据（不要提交真实凭据）
+auth.json
+
+# 自动生成文件
+data.js
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/.claude/settings.local.json

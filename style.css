@@ -1,0 +1,163 @@
+/* TAPD 项目监控 - 样式 */
+
+:root {
+    --bg: #f5f7fa;
+    --text: #1a1a2e;
+    --muted: #6b7280;
+    --light-muted: #9ca3af;
+    --card-bg: #fff;
+    --card-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    --border: #e5e7eb;
+    --blue: #2563eb;
+    --blue-bg: #eff6ff;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --red-border: #fecaca;
+    --yellow: #ca8a04;
+    --yellow-bg: #fffbeb;
+    --yellow-border: #fde68a;
+    --purple: #7c3aed;
+    --purple-bg: #f5f3ff;
+    --purple-border: #ddd6fe;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --green-border: #bbf7d0;
+    --dark: #1a1a2e;
+    --dark-accent: #16213e;
+    --radius: 10px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* 顶栏 */
+.topbar {
+    background: linear-gradient(135deg, var(--dark), var(--dark-accent));
+    color: #fff;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.topbar h1 { font-size: 16px; font-weight: 700; }
+
+.topbar select {
+    padding: 6px 28px 6px 10px;
+    border-radius: 6px;
+    border: none;
+    font-size: 13px;
+    background: #fff;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%23666' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    min-width: 180px;
+}
+
+.btn {
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    background: #fff;
+    color: var(--dark);
+    font-weight: 600;
+}
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn:hover:not(:disabled) { background: #e5e7eb; }
+
+/* 容器 */
+.container { max-width: 760px; margin: 0 auto; padding: 20px; }
+.date-line { font-size: 11px; color: var(--light-muted); margin-bottom: 14px; }
+
+/* 摘要卡片 */
+.summary {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+}
+
+.stat {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 10px 16px;
+    box-shadow: var(--card-shadow);
+    min-width: 90px;
+    text-align: center;
+}
+
+.stat-sub { background: var(--blue-bg); border: 1px solid #bfdbfe; }
+.stat-sub .num { font-size: 18px; }
+.stat-clickable { cursor: pointer; user-select: none; }
+.stat-clickable:hover { background: #dbeafe; }
+
+.parent-list {
+    background: var(--blue-bg);
+    border: 1px solid #bfdbfe;
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    margin-bottom: 14px;
+}
+.parent-list-title { font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+.parent-list ul { margin: 0 0 0 16px; }
+.parent-list li { margin: 2px 0; font-size: 13px; }
+
+.stat .num { font-size: 22px; font-weight: 700; }
+.stat .label { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+/* 洞察卡片 */
+.alert {
+    padding: 14px 18px;
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+}
+
+.alert-red    { background: var(--red-bg);    border: 1px solid var(--red-border); }
+.alert-yellow { background: var(--yellow-bg); border: 1px solid var(--yellow-border); }
+.alert-purple { background: var(--purple-bg); border: 1px solid var(--purple-border); }
+.alert-orange { background: #fff7ed; border: 1px solid #fed7aa; }
+.alert-teal   { background: #f0fdfa; border: 1px solid #99f6e4; }
+.alert-blue   { background: var(--blue-bg);   border: 1px solid #bfdbfe; }
+.alert-green  { background: var(--green-bg);  border: 1px solid var(--green-border); }
+
+.alert-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+.alert-body  { font-size: 13px; color: #374151; }
+.alert-body ul { margin: 4px 0 0 16px; }
+.alert-body li { margin: 2px 0; }
+
+/* 标签 */
+.tag {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    margin: 0 2px;
+}
+
+.tag-red  { background: var(--red-bg); color: var(--red); }
+.tag-gray { background: #f3f4f6; color: var(--muted); }
+
+/* 状态 */
+.updating {
+    text-align: center;
+    padding: 48px;
+    color: var(--muted);
+}
+
+small { font-size: 11px; color: var(--light-muted); }
+
+/* 加载动画 */
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

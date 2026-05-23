@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hook": {
+          "type": "command",
+          "command": "python3 -m py_compile \"$CLAUDE_PROJECT_DIR/fetch.py\" 2>/dev/null && python3 -m py_compile \"$CLAUDE_PROJECT_DIR/build.py\" 2>/dev/null; true"
+        }
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(curl:*)"
+    ]
+  },
+  "sandbox": {
+    "network": {
+      "allowedHosts": ["api.tapd.cn"]
+    }
+  }
+}
