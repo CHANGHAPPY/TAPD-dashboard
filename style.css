@@ -130,6 +130,8 @@ body {
 .stat-red    { background: var(--red-bg);   border: 1px solid var(--red-border); }
 .stat-yellow { background: var(--yellow-bg); border: 1px solid var(--yellow-border); }
 .stat-stone  { background: #fafaf9; border: 1px solid #e7e5e4; }
+.stat-lavender { background: #f5f3ff; border: 1px solid #ddd6fe; }
+.stat-lavender .num { font-size: 18px; }
 .stat-clickable { cursor: pointer; user-select: none; }
 .stat-clickable:hover { filter: brightness(0.96); }
 .stat-expanded { box-shadow: 0 0 0 2px var(--blue); }
@@ -145,7 +147,7 @@ body {
 .parent-list.panel-red    { background: var(--red-bg);    border-color: var(--red-border); }
 .parent-list.panel-yellow { background: var(--yellow-bg); border-color: var(--yellow-border); }
 .parent-list.panel-stone  { background: #fafaf9; border-color: #e7e5e4; }
-.parent-list.panel-rose  { background: #fff1f2; border-color: #fecdd3; }
+.parent-list.panel-lavender { background: #f5f3ff; border-color: #ddd6fe; }
 
 .chart-legend { display: flex; gap: 16px; justify-content: center; margin-top: 8px; }
 .legend-item { cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; user-select: none; }

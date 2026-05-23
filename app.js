@@ -248,7 +248,7 @@ const App = {
         const childCount = D.child_story_count || D.open_stories || 0;
         document.getElementById('summary').innerHTML =
             `<div class="stat stat-sub stat-clickable stat-parent" id="parentStat"><div class="num">${parentCount}</div><div class="label">主需求 ▾</div></div>
-            <div class="stat stat-sub stat-clickable" id="childStat"><div class="num">${childCount}</div><div class="label">子需求 ▾</div></div>
+            <div class="stat stat-sub stat-clickable stat-lavender" id="childStat"><div class="num">${childCount}</div><div class="label">子需求 ▾</div></div>
             <div class="stat stat-clickable stat-green" id="progressStat"><div class="num">${pct}%</div><div class="label">完成率 ▾</div></div>
             <div class="stat stat-clickable stat-red" id="overdueStat"><div class="num" style="color:var(--red)">${D.overdue_count}</div><div class="label">延期 ▾</div></div>
             <div class="stat stat-clickable stat-yellow" id="bugStat"><div class="num" style="color:var(--purple)">${D.open_bugs || 0}</div><div class="label">缺陷 ▾</div></div>
@@ -470,7 +470,7 @@ const App = {
 
             const div = document.createElement('div');
             div.id = listId;
-            div.className = 'parent-list panel-rose';
+            div.className = 'parent-list panel-lavender';
             div.innerHTML = `<div class="parent-list-title">子需求分类 (${stories.filter(s => !s.is_closed).length}个)</div>
                 <div style="height:260px;position:relative"><canvas id="childPieChart"></canvas></div>
                 <div class="chart-legend">${entries.map(c =>
