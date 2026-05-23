@@ -492,15 +492,17 @@ const App = {
             const stat = document.getElementById(statId);
             if (stat) { stat.classList.add('stat-expanded'); const lb = stat.querySelector('.label'); if (lb) lb.innerHTML = lb.innerHTML.replace('▾', '▴'); }
 
-            // 子需求分类规则
+            // 子需求分类规则（patterns 为数组，匹配任一即归入）
             const CATEGORIES = [
-                { key: '策划需求', pattern: '文档编辑', color: '#f97316' },
-                { key: '前端', pattern: '前端开发', color: '#3b82f6' },
-                { key: '后端', pattern: '后端开发', color: '#6366f1' },
-                { key: 'UI', pattern: 'UI设计', color: '#ec4899' },
-                { key: '测试验收', pattern: '测试验收', color: '#14b8a6' },
-                { key: '策划验收', pattern: '策划验收', color: '#8b5cf6' },
-                { key: '美术', pattern: null, color: '#a1a1aa' }
+                { key: '策划需求', patterns: ['文档编辑'], color: '#f97316' },
+                { key: '前端', patterns: ['前端开发', '前端实现', '前端制作'], color: '#3b82f6' },
+                { key: '后端', patterns: ['后端开发', '后端实现', '后端制作'], color: '#6366f1' },
+                { key: 'UI', patterns: ['UI设计'], color: '#ec4899' },
+                { key: '数值', patterns: ['策划配置', '数值配置', '数值设计', '数值需求', '功能测试'], color: '#eab308' },
+                { key: '测试验收', patterns: ['测试验收'], color: '#14b8a6' },
+                { key: '策划验收', patterns: ['策划验收'], color: '#8b5cf6' },
+                { key: '其他', patterns: ['英雄技能'], color: '#78716c' },
+                { key: '美术', patterns: null, color: '#a1a1aa' }
             ];
             const counts = {};
             CATEGORIES.forEach(c => { counts[c.key] = 0; });
@@ -509,7 +511,7 @@ const App = {
                 if (s.is_closed) return;
                 let matched = false;
                 for (const cat of CATEGORIES) {
-                    if (cat.pattern && s.name.includes(cat.pattern)) {
+                    if (cat.patterns && cat.patterns.some(p => s.name.includes(p))) {
                         counts[cat.key]++; matched = true; break;
                     }
                 }
