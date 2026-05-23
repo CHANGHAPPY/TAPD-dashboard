@@ -146,25 +146,51 @@ const App = {
             };
             // 拖拽事件
             btn.addEventListener('dragstart', (e) => {
-                e.dataTransfer.setData('text/plain', String(index));
-                btn.classList.add('dragging');
+                if (item.id === '__all__') { e.preventDefault(); return; }
+                e.dataTransfer.setData('text/plain', item.id);
+                e.dataTransfer.effectAllowed = 'move';
+                setTimeout(() => btn.classList.add('dragging'), 0);
             });
-            btn.addEventListener('dragend', () => { btn.classList.remove('dragging'); });
-            btn.addEventListener('dragover', (e) => { e.preventDefault(); });
+            btn.addEventListener('dragend', () => {
+                btn.classList.remove('dragging');
+                sidebar.querySelectorAll('.sidebar-item').forEach(b => {
+                    b.classList.remove('drop-above', 'drop-below');
+                });
+            });
+            btn.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (item.id === '__all__') return;
+                // 根据鼠标在目标上半部还是下半部决定插入位置
+                const rect = btn.getBoundingClientRect();
+                const mid = rect.top + rect.height / 2;
+                sidebar.querySelectorAll('.sidebar-item').forEach(b => {
+                    b.classList.remove('drop-above', 'drop-below');
+                });
+                if (e.clientY < mid) {
+                    btn.classList.add('drop-above');
+                } else {
+                    btn.classList.add('drop-below');
+                }
+            });
+            btn.addEventListener('dragleave', () => {
+                btn.classList.remove('drop-above', 'drop-below');
+            });
             btn.addEventListener('drop', (e) => {
                 e.preventDefault();
-                const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
-                if (fromIdx !== index && item.id !== '__all__') {
-                    const btns = [...sidebar.querySelectorAll('.sidebar-item')];
-                    const fromBtn = btns[fromIdx];
-                    if (fromBtn.dataset.id === '__all__') return; // 不能拖"全部"
-                    if (index > fromIdx) {
-                        btn.after(fromBtn);
-                    } else {
-                        btn.before(fromBtn);
-                    }
-                    this.saveOrder();
+                btn.classList.remove('drop-above', 'drop-below');
+                const fromId = e.dataTransfer.getData('text/plain');
+                if (!fromId || fromId === item.id || fromId === '__all__') return;
+                const fromBtn = sidebar.querySelector(`[data-id="${fromId}"]`);
+                if (!fromBtn) return;
+                const rect = btn.getBoundingClientRect();
+                const mid = rect.top + rect.height / 2;
+                if (e.clientY < mid) {
+                    btn.before(fromBtn);
+                } else {
+                    btn.after(fromBtn);
                 }
+                this.saveOrder();
             });
 
             const isActive = (item.id === '__all__' && this.currentIterId === null) || item.id === this.currentIterId;

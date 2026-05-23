@@ -100,7 +100,9 @@ body {
 }
 .sidebar-item:hover { background: #f9fafb; }
 .sidebar-item.active { background: var(--blue-bg); border-left: 3px solid var(--blue); font-weight: 600; }
-.sidebar-item.dragging { opacity: 0.5; }
+.sidebar-item.dragging { opacity: 0.4; }
+.sidebar-item.drop-above { border-top: 2px solid var(--blue); }
+.sidebar-item.drop-below { border-bottom: 2px solid var(--blue); }
 .sidebar-item .count { font-size: 11px; color: var(--muted); }
 .content { flex: 1; max-width: 800px; padding: 20px; }
 .date-line { font-size: 11px; color: var(--light-muted); margin-bottom: 14px; }
