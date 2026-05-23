@@ -52,7 +52,7 @@ const App = {
             unassigned_stories: 0, unassigned_bugs: 0,
             bug_fix_priority_count: 0, pending_review_count: 0,
             overdue: [], severe_bugs: [], bug_fix_priority: [], pending_review: [],
-            parent_stories: [], workload: {}, status_dist: {}
+            parent_stories: [], workload: {}, status_dist: {}, stories: [], bugs: []
         };
         const allParents = new Map();
         for (const iid in this.allData.data) {
@@ -75,6 +75,8 @@ const App = {
             if (d.severe_bugs) result.severe_bugs.push(...d.severe_bugs);
             if (d.bug_fix_priority) result.bug_fix_priority.push(...d.bug_fix_priority);
             if (d.pending_review) result.pending_review.push(...d.pending_review);
+            if (d.stories) result.stories.push(...d.stories);
+            if (d.bugs) result.bugs.push(...d.bugs);
             for (const ps of (d.parent_stories || [])) {
                 if (!allParents.has(ps.id)) allParents.set(ps.id, ps);
                 else if (ps.is_open) allParents.set(ps.id, ps);
