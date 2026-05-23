@@ -149,7 +149,10 @@ body {
 .parent-list.panel-stone  { background: #fafaf9; border-color: #e7e5e4; }
 .parent-list.panel-lavender { background: #f5f3ff; border-color: #ddd6fe; }
 
-.chart-legend { display: flex; gap: 16px; justify-content: center; margin-top: 8px; }
+.cat-detail { margin-top: 10px; max-height: 300px; overflow-y: auto; }
+.cat-detail ul { margin: 0 0 0 16px; }
+.cat-detail li { margin: 2px 0; font-size: 12px; }
+.clickable-cat { cursor: pointer; }
 .legend-item { cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; user-select: none; }
 .legend-dot { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
 .legend-off { opacity: 0.35; }

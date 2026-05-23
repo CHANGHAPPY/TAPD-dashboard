@@ -507,32 +507,35 @@ const App = {
                 { key: '美术', patterns: null, color: '#a1a1aa' }
             ];
             const counts = {};
-            CATEGORIES.forEach(c => { counts[c.key] = 0; });
+            const catStories = {};
+            CATEGORIES.forEach(c => { counts[c.key] = 0; catStories[c.key] = []; });
             const stories = D.stories || [];
             stories.forEach(s => {
                 if (s.is_closed) return;
                 let matched = false;
                 for (const cat of CATEGORIES) {
                     if (cat.patterns && cat.patterns.some(p => s.name.includes(p))) {
-                        counts[cat.key]++; matched = true; break;
+                        counts[cat.key]++; catStories[cat.key].push(s); matched = true; break;
                     }
                 }
-                if (!matched) counts['美术']++;
+                if (!matched) { counts['美术']++; catStories['美术'].push(s); }
             });
             const entries = CATEGORIES.filter(c => counts[c.key] > 0);
+            const totalOpen = stories.filter(s => !s.is_closed).length;
 
             const div = document.createElement('div');
             div.id = listId;
             div.className = 'parent-list panel-lavender';
-            div.innerHTML = `<div class="parent-list-title">子需求分类 (${stories.filter(s => !s.is_closed).length}个)</div>
+            div.innerHTML = `<div class="parent-list-title">子需求分类 (${totalOpen}个)</div>
                 <div style="height:260px;position:relative"><canvas id="childPieChart"></canvas></div>
                 <div class="chart-legend">${entries.map(c =>
-                    `<span class="legend-item" data-key="${c.key}"><span class="legend-dot" style="background:${c.color}"></span> ${c.key} (${counts[c.key]})</span>`
-                ).join('')}</div>`;
+                    `<span class="legend-item clickable-cat" data-key="${c.key}"><span class="legend-dot" style="background:${c.color}"></span> ${c.key} (${counts[c.key]})</span>`
+                ).join('')}</div>
+                <div id="catDetailPanel" class="cat-detail" style="display:none"></div>`;
             document.getElementById('summary').after(div);
 
             const ctx = document.getElementById('childPieChart').getContext('2d');
-            new Chart(ctx, {
+            const pieChart = new Chart(ctx, {
                 type: 'pie',
                 data: {
                     labels: entries.map(c => c.key),
@@ -541,29 +544,36 @@ const App = {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    onClick: (e, elements) => {
+                        if (elements.length === 0) return;
+                        const idx = elements[0].index;
+                        const key = pieChart.data.labels[idx];
+                        const items = catStories[key] || [];
+                        const panel = document.getElementById('catDetailPanel');
+                        if (!panel) return;
+                        panel.style.display = 'block';
+                        panel.innerHTML = `<div class="parent-list-title" style="margin-top:10px">${key} (${items.length}个)</div>
+                            <ul>${items.map(s => `<li>${esc(s.name)} <span class="tag tag-gray">${esc(s.owner || '未分配')}</span></li>`).join('')}</ul>`;
+                    },
                     plugins: {
                         legend: { display: false },
-                        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw}个 (${Math.round(ctx.raw / entries.reduce((s, c) => s + counts[c.key], 0) * 100)}%)` } }
+                        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw}个 (${Math.round(ctx.raw / totalOpen * 100)}%)` } } }
                     }
                 }
-            });
+            );
 
-            // 图例点击切换
-            div.querySelectorAll('.legend-item').forEach(item => {
+            // 图例点击切换（同时滚动到分类详情）
+            div.querySelectorAll('.clickable-cat').forEach(item => {
                 item.addEventListener('click', function() {
                     const key = this.dataset.key;
-                    const chart = Chart.getChart('childPieChart');
-                    const idx = chart.data.labels.indexOf(key);
-                    if (idx >= 0) {
-                        const meta = chart.getDatasetMeta(0);
-                        meta.hidden = meta.hidden || [];
-                        if (meta.hidden.includes(idx)) {
-                            meta.hidden = meta.hidden.filter(i => i !== idx);
-                        } else {
-                            meta.hidden.push(idx);
-                        }
-                        this.classList.toggle('legend-off', meta.hidden.includes(idx));
-                        chart.update();
+                    const items = catStories[key] || [];
+                    const panel = document.getElementById('catDetailPanel');
+                    if (!panel) return;
+                    panel.style.display = panel.style.display === 'block' && panel.__lastKey === key ? 'none' : 'block';
+                    if (panel.style.display === 'block') {
+                        panel.__lastKey = key;
+                        panel.innerHTML = `<div class="parent-list-title" style="margin-top:10px">${key} (${items.length}个)</div>
+                            <ul>${items.map(s => `<li>${esc(s.name)} <span class="tag tag-gray">${esc(s.owner || '未分配')}</span></li>`).join('')}</ul>`;
                     }
                 });
             });
