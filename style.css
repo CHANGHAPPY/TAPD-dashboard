@@ -153,6 +153,17 @@ body {
 .legend-item { cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; user-select: none; }
 .legend-dot { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
 .legend-off { opacity: 0.35; }
+
+.sort-btn {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: #fff;
+    cursor: pointer;
+    color: var(--muted);
+}
+.sort-btn-active { background: var(--dark); color: #fff; border-color: var(--dark); }
 .parent-list-title { font-weight: 700; font-size: 13px; margin-bottom: 6px; }
 .parent-list ul { margin: 0 0 0 16px; }
 .parent-list li { margin: 2px 0; font-size: 13px; }

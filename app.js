@@ -349,6 +349,46 @@ const App = {
     setupPersonnelClick(D) {
         const el = document.getElementById('personnelStat');
         if (!el) return;
+
+        const buildChartData = (sortBy) => {
+            const wl = D.workload || {};
+            const entries = Object.entries(wl);
+            const sortKey = (sortBy === 'bugs') ? (e => e[1].bugs) :
+                           (sortBy === 'stories') ? (e => e[1].stories) :
+                           (e => e[1].stories + e[1].bugs);
+            entries.sort((a, b) => sortKey(b) - sortKey(a));
+            return {
+                labels: entries.map(e => e[0]),
+                storyData: entries.map(e => e[1].stories),
+                bugData: entries.map(e => e[1].bugs)
+            };
+        };
+
+        const renderChart = (container, initialSort) => {
+            const data = buildChartData(initialSort);
+            const chart = new Chart(document.getElementById('workloadChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        { label: '需求', data: data.storyData, backgroundColor: '#2563eb', borderRadius: 2 },
+                        { label: '缺陷', data: data.bugData, backgroundColor: '#dc2626', borderRadius: 2 }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { stacked: false, ticks: { stepSize: 1 } },
+                        y: { ticks: { font: { size: 11 } } }
+                    }
+                }
+            });
+            return chart;
+        };
+
         el.onclick = () => {
             const listId = 'personnelList';
             const statId = 'personnelStat';
@@ -374,41 +414,39 @@ const App = {
                 document.getElementById('summary').after(div);
                 return;
             }
-            const labels = entries.map(e => e[0]);
-            const storyData = entries.map(e => e[1].stories);
-            const bugData = entries.map(e => e[1].bugs);
 
+            const height = Math.max(180, entries.length * 28);
             const div = document.createElement('div');
             div.id = listId;
             div.className = 'parent-list panel-stone';
             div.innerHTML = `<div class="parent-list-title">参与人员 (${entries.length}人)</div>
-                <div style="height:${Math.max(180, entries.length * 28)}px;position:relative"><canvas id="workloadChart"></canvas></div>
+                <div style="display:flex;gap:8px;margin-bottom:6px">
+                    <button class="sort-btn sort-btn-active" data-sort="total">总数</button>
+                    <button class="sort-btn" data-sort="stories">需求</button>
+                    <button class="sort-btn" data-sort="bugs">缺陷</button>
+                </div>
+                <div style="height:${height}px;position:relative"><canvas id="workloadChart"></canvas></div>
                 <div class="chart-legend">
                     <span class="legend-item" data-ds="0"><span class="legend-dot" style="background:#2563eb"></span> 需求</span>
                     <span class="legend-item" data-ds="1"><span class="legend-dot" style="background:#dc2626"></span> 缺陷</span>
                 </div>`;
             document.getElementById('summary').after(div);
 
-            const ctx = document.getElementById('workloadChart').getContext('2d');
-            const chart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: '需求', data: storyData, backgroundColor: '#2563eb', borderRadius: 2 },
-                        { label: '缺陷', data: bugData, backgroundColor: '#dc2626', borderRadius: 2 }
-                    ]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { stacked: false, ticks: { stepSize: 1 } },
-                        y: { ticks: { font: { size: 11 } } }
-                    }
-                }
+            let chart = renderChart(div, 'total');
+
+            // 排序按钮
+            div.querySelectorAll('.sort-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    div.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('sort-btn-active'));
+                    this.classList.add('sort-btn-active');
+                    const sortBy = this.dataset.sort;
+                    // 重新排序
+                    const data = buildChartData(sortBy);
+                    chart.data.labels = data.labels;
+                    chart.data.datasets[0].data = data.storyData;
+                    chart.data.datasets[1].data = data.bugData;
+                    chart.update();
+                });
             });
 
             // 图例点击切换
