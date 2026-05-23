@@ -97,21 +97,27 @@ const App = {
         const parentCount = D.parent_story_count || 0;
         const childCount = D.child_story_count || D.open_stories || 0;
         document.getElementById('summary').innerHTML =
-            `<div class="stat stat-sub stat-clickable" id="parentStat"><div class="num">${parentCount}</div><div class="label">主需求 &#9662;</div></div>
+            `<div class="stat stat-sub stat-clickable stat-parent" id="parentStat"><div class="num">${parentCount}</div><div class="label">主需求 ▾</div></div>
             <div class="stat stat-sub"><div class="num">${childCount}</div><div class="label">子需求</div></div>
-            <div class="stat stat-clickable" id="progressStat"><div class="num">${pct}%</div><div class="label">完成率 &#9662;</div></div>
-            <div class="stat stat-clickable" id="overdueStat"><div class="num" style="color:var(--red)">${D.overdue_count}</div><div class="label">延期 &#9662;</div></div>
-            <div class="stat stat-clickable" id="bugStat"><div class="num" style="color:var(--purple)">${D.open_bugs || 0}</div><div class="label">缺陷 &#9662;</div></div>
+            <div class="stat stat-clickable stat-green" id="progressStat"><div class="num">${pct}%</div><div class="label">完成率 ▾</div></div>
+            <div class="stat stat-clickable stat-red" id="overdueStat"><div class="num" style="color:var(--red)">${D.overdue_count}</div><div class="label">延期 ▾</div></div>
+            <div class="stat stat-clickable stat-yellow" id="bugStat"><div class="num" style="color:var(--purple)">${D.open_bugs || 0}</div><div class="label">缺陷 ▾</div></div>
             <div class="stat"><div class="num">${Object.keys(D.workload).length}</div><div class="label">参与人员</div></div>`;
     },
 
     /** 通用展开/收起 */
-    toggleExpand(id, buildContent) {
-        const existing = document.getElementById(id);
-        if (existing) { existing.remove(); return; }
+    toggleExpand(listId, statId, panelClass, buildContent) {
+        const existing = document.getElementById(listId);
+        const stat = document.getElementById(statId);
+        if (existing) {
+            existing.remove();
+            if (stat) { stat.classList.remove('stat-expanded'); const lb = stat.querySelector('.label'); if (lb) lb.innerHTML = lb.innerHTML.replace('▴', '▾'); }
+            return;
+        }
+        if (stat) { stat.classList.add('stat-expanded'); const lb = stat.querySelector('.label'); if (lb) lb.innerHTML = lb.innerHTML.replace('▾', '▴'); }
         const div = document.createElement('div');
-        div.id = id;
-        div.className = 'parent-list';
+        div.id = listId;
+        div.className = 'parent-list ' + panelClass;
         div.innerHTML = buildContent();
         document.getElementById('summary').after(div);
     },
@@ -120,7 +126,7 @@ const App = {
     setupParentClick(D) {
         const el = document.getElementById('parentStat');
         if (!el) return;
-        el.onclick = () => this.toggleExpand('parentList', () => {
+        el.onclick = () => this.toggleExpand('parentList', 'parentStat', '', () => {
             const parents = (D.parent_stories || []).filter(p => p.is_open);
             if (parents.length === 0) return '';
             const items = parents.map(p =>
@@ -134,7 +140,7 @@ const App = {
     setupProgressClick(D, it) {
         const el = document.getElementById('progressStat');
         if (!el) return;
-        el.onclick = () => this.toggleExpand('progressList', () => {
+        el.onclick = () => this.toggleExpand('progressList', 'progressStat', 'panel-green', () => {
             const parentAll = D.parent_story_count_all || D.parent_story_count || 0;
             const parentDone = parentAll - (D.parent_story_count || 0);
             const childAll = D.total_stories || 0;
@@ -158,7 +164,7 @@ const App = {
     setupOverdueClick(D) {
         const el = document.getElementById('overdueStat');
         if (!el) return;
-        el.onclick = () => this.toggleExpand('overdueList', () => {
+        el.onclick = () => this.toggleExpand('overdueList', 'overdueStat', 'panel-red', () => {
             const overdue = D.overdue || [];
             if (overdue.length === 0) return '<div class="parent-list-title">无延期需求</div>';
             const owners = {};
@@ -177,7 +183,7 @@ const App = {
     setupBugClick(D) {
         const el = document.getElementById('bugStat');
         if (!el) return;
-        el.onclick = () => this.toggleExpand('bugList', () => {
+        el.onclick = () => this.toggleExpand('bugList', 'bugStat', 'panel-yellow', () => {
             const severe = D.severe_bugs || [];
             if (severe.length === 0) return `<div class="parent-list-title">无严重缺陷</div><div style="font-size:12px;color:var(--muted)">共 ${D.open_bugs || 0} 个未关闭缺陷，无高优/紧急缺陷</div>`;
             const items = severe.map(b =>

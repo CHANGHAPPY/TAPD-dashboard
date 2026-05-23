@@ -99,8 +99,12 @@ body {
 
 .stat-sub { background: var(--blue-bg); border: 1px solid #bfdbfe; }
 .stat-sub .num { font-size: 18px; }
+.stat-green  { background: var(--green-bg); border: 1px solid var(--green-border); }
+.stat-red    { background: var(--red-bg);   border: 1px solid var(--red-border); }
+.stat-yellow { background: var(--yellow-bg); border: 1px solid var(--yellow-border); }
 .stat-clickable { cursor: pointer; user-select: none; }
-.stat-clickable:hover { background: #dbeafe; }
+.stat-clickable:hover { filter: brightness(0.96); }
+.stat-expanded { box-shadow: 0 0 0 2px var(--blue); }
 
 .parent-list {
     background: var(--blue-bg);
@@ -109,6 +113,9 @@ body {
     padding: 12px 18px;
     margin-bottom: 14px;
 }
+.parent-list.panel-green  { background: var(--green-bg);  border-color: var(--green-border); }
+.parent-list.panel-red    { background: var(--red-bg);    border-color: var(--red-border); }
+.parent-list.panel-yellow { background: var(--yellow-bg); border-color: var(--yellow-border); }
 .parent-list-title { font-weight: 700; font-size: 13px; margin-bottom: 6px; }
 .parent-list ul { margin: 0 0 0 16px; }
 .parent-list li { margin: 2px 0; font-size: 13px; }
