@@ -9,17 +9,17 @@
 <body>
 
 <div class="topbar">
-  <div style="display:flex;align-items:center;gap:12px">
-    <h1>TAPD 项目洞察</h1>
-    <select id="iterSelect"></select>
-  </div>
+  <h1>TAPD 项目洞察</h1>
   <button class="btn" id="btnRefresh" onclick="App.refresh()">刷新</button>
 </div>
 
-<div class="container">
-  <div class="date-line" id="dateLine"></div>
-  <div class="summary" id="summary"></div>
-  <div id="alerts"></div>
+<div class="main-layout">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="content">
+    <div class="date-line" id="dateLine"></div>
+    <div class="summary" id="summary"></div>
+    <div id="alerts"></div>
+  </div>
 </div>
 
 <!-- Chart.js -->

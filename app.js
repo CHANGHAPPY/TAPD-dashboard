@@ -38,23 +38,29 @@ const App = {
     init(data) {
         this.normalizeData(data);
         this.allData = data;
-        this.setupIterSelector();
         this.currentIterId = data.iterations[0].id;
+        this.setupIterSelector();
         this.render();
     },
 
-    /** 填充迭代下拉 */
+    /** 填充侧边栏迭代列表 */
     setupIterSelector() {
-        const sel = document.getElementById('iterSelect');
-        sel.innerHTML = '';
+        const sidebar = document.getElementById('sidebar');
+        sidebar.innerHTML = '';
         this.allData.iterations.forEach(it => {
             const d = this.allData.data[it.id] || {};
-            sel.innerHTML += `<option value="${it.id}">${it.name} (${d.total_stories || 0}需求)</option>`;
+            const btn = document.createElement('button');
+            btn.className = 'sidebar-item';
+            btn.innerHTML = `${it.name}<br><span class="count">${d.total_stories || 0}需求 ${d.total_bugs || 0}缺陷</span>`;
+            btn.onclick = () => {
+                this.currentIterId = it.id;
+                this.render();
+                sidebar.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            };
+            if (it.id === this.currentIterId) btn.classList.add('active');
+            sidebar.appendChild(btn);
         });
-        sel.onchange = () => {
-            this.currentIterId = sel.value;
-            this.render();
-        };
     },
 
     /** 主渲染 */
@@ -332,7 +338,8 @@ const App = {
             this.allData = newData;
             this.normalizeData(this.allData);
             this.setupIterSelector();
-            this.currentIterId = this.allData.iterations[0].id;
+            const curId = this.currentIterId;
+            if (!this.allData.data[curId]) this.currentIterId = this.allData.iterations[0].id;
             this.render();
             document.getElementById('dateLine').textContent += ' | 已刷新 (' + new Date().toLocaleTimeString() + ')';
         } catch (e) {

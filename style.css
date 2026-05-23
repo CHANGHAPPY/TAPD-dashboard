@@ -77,7 +77,31 @@ body {
 .btn:hover:not(:disabled) { background: #e5e7eb; }
 
 /* 容器 */
-.container { max-width: 760px; margin: 0 auto; padding: 20px; }
+.main-layout { display: flex; min-height: calc(100vh - 48px); }
+.sidebar {
+    width: 200px;
+    min-width: 200px;
+    background: #fff;
+    border-right: 1px solid var(--border);
+    padding: 0;
+    overflow-y: auto;
+}
+.sidebar-item {
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    background: #fff;
+    text-align: left;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text);
+}
+.sidebar-item:hover { background: #f9fafb; }
+.sidebar-item.active { background: var(--blue-bg); border-left: 3px solid var(--blue); font-weight: 600; }
+.sidebar-item .count { font-size: 11px; color: var(--muted); }
+.content { flex: 1; max-width: 800px; padding: 20px; }
 .date-line { font-size: 11px; color: var(--light-muted); margin-bottom: 14px; }
 
 /* 摘要卡片 */
