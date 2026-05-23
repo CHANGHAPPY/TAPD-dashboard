@@ -209,7 +209,15 @@ const App = {
 
     /** 主渲染 */
     render() {
-        ['parentList', 'progressList', 'overdueList', 'bugList', 'personnelList', 'childList'].forEach(id => {
+        // 记录哪些面板是打开状态
+        if (!this.openPanels) this.openPanels = new Set(['overdueList']);
+        const panelIds = ['parentList', 'progressList', 'overdueList', 'bugList', 'personnelList', 'childList'];
+        panelIds.forEach(id => {
+            if (document.getElementById(id)) this.openPanels.add(id);
+            else this.openPanels.delete(id);
+        });
+
+        panelIds.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.remove();
         });
@@ -228,10 +236,13 @@ const App = {
         this.setupBugClick(D);
         this.setupPersonnelClick(D);
         this.setupChildClick(D);
-        // 默认只展开延期
-        if (!document.getElementById('overdueList')) {
-            document.getElementById('overdueStat')?.click();
-        }
+        // 恢复之前打开的面板（默认展开延期）
+        const statMap = { parentList: 'parentStat', progressList: 'progressStat', overdueList: 'overdueStat', bugList: 'bugStat', personnelList: 'personnelStat', childList: 'childStat' };
+        panelIds.forEach(id => {
+            if (this.openPanels.has(id) && !document.getElementById(id)) {
+                document.getElementById(statMap[id])?.click();
+            }
+        });
         this.renderInsights(D, it);
     },
 
@@ -588,10 +599,6 @@ const App = {
                 title: `${bfpCount} 个需求优先推进Bug修复`,
                 body: `以下需求状态为"BUG修复中"且已超过截止日期：<ul>${bfpItems}${(D.bug_fix_priority || []).length > 5 ? `<li><small>...还有 ${D.bug_fix_priority.length - 5} 个</small></li>` : ''}</ul>`
             });
-        }
-
-        if (alerts.length === 0) {
-            alerts.push({ cls: 'alert-green', title: '一切正常', body: '当前迭代没有需要关注的问题。' });
         }
 
         document.getElementById('alerts').innerHTML = alerts.map(a =>
