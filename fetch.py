@@ -27,13 +27,20 @@ CLOSED_STORY = {'resolved', 'status_1'}
 CLOSED_BUG = {'closed', 'resolved', 'rejected'}
 
 
-def fetch(url):
-    """调用 curl 获取 TAPD API 数据"""
-    r = subprocess.run(
-        ['curl', '-s', '--noproxy', '*', '-u', AUTH, url],
-        capture_output=True, text=True, timeout=30
-    )
-    return json.loads(r.stdout)
+def fetch(url, retries=2):
+    """调用 curl 获取 TAPD API 数据，失败自动重试"""
+    for attempt in range(retries + 1):
+        try:
+            r = subprocess.run(
+                ['curl', '-s', '--noproxy', '*', '-u', AUTH, url],
+                capture_output=True, text=True, timeout=30
+            )
+            return json.loads(r.stdout)
+        except Exception as e:
+            if attempt == retries:
+                raise
+            print(f'  API 调用失败，重试 ({attempt+1}/{retries}): {e}', file=sys.stderr)
+            import time; time.sleep(1)
 
 
 def fetch_paginated(base_url):
@@ -52,9 +59,9 @@ def fetch_paginated(base_url):
 
 
 def get_iterations():
-    """获取所有 open 状态的迭代"""
-    data = fetch(f'https://api.tapd.cn/iterations?workspace_id={WORKSPACE_ID}&limit=100')
-    return [x['Iteration'] for x in data['data'] if x['Iteration'].get('status') == 'open']
+    """获取所有 open 状态的迭代（翻页拉全）"""
+    items = fetch_paginated(f'https://api.tapd.cn/iterations?workspace_id={WORKSPACE_ID}')
+    return [x['Iteration'] for x in items if x['Iteration'].get('status') == 'open']
 
 
 def analyze_iteration(iteration_id):
@@ -148,7 +155,7 @@ def analyze_iteration(iteration_id):
             if s['status'] not in CLOSED_STORY:
                 parent_ids_open.add(pid)
 
-    # 拉取父需求详情（批量，每批 50 个）
+    # 拉取父需求详情（批量，每批 30 个）
     parent_stories = []
     if parent_ids_all:
         pids = list(parent_ids_all)

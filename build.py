@@ -8,7 +8,7 @@ import json, subprocess, sys, os
 print('正在拉取 TAPD 数据...')
 result = subprocess.run(
     ['python3', os.path.join(os.path.dirname(__file__), 'fetch.py')],
-    capture_output=True, text=True, timeout=120
+    capture_output=True, text=True, timeout=300
 )
 
 if result.returncode != 0:

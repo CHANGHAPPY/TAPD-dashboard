@@ -18,7 +18,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             try:
                 result = subprocess.run(
                     ['python3', os.path.join(ROOT, 'build.py')],
-                    capture_output=True, text=True, timeout=120, cwd=ROOT
+                    capture_output=True, text=True, timeout=300, cwd=ROOT
                 )
                 if result.returncode != 0:
                     self.send_error(500, result.stderr[:500])
