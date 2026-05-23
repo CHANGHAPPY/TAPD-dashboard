@@ -59,7 +59,7 @@ const App = {
 
     /** 主渲染 */
     render() {
-        ['parentList', 'progressList', 'overdueList', 'bugList'].forEach(id => {
+        ['parentList', 'progressList', 'overdueList', 'bugList', 'personnelList'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.remove();
         });
@@ -75,6 +75,7 @@ const App = {
         this.setupProgressClick(D, it);
         this.setupOverdueClick(D);
         this.setupBugClick(D);
+        this.setupPersonnelClick(D);
         // 默认只展开延期
         if (!document.getElementById('overdueList')) {
             document.getElementById('overdueStat')?.click();
@@ -99,7 +100,7 @@ const App = {
             <div class="stat stat-clickable stat-green" id="progressStat"><div class="num">${pct}%</div><div class="label">完成率 ▾</div></div>
             <div class="stat stat-clickable stat-red" id="overdueStat"><div class="num" style="color:var(--red)">${D.overdue_count}</div><div class="label">延期 ▾</div></div>
             <div class="stat stat-clickable stat-yellow" id="bugStat"><div class="num" style="color:var(--purple)">${D.open_bugs || 0}</div><div class="label">缺陷 ▾</div></div>
-            <div class="stat"><div class="num">${Object.keys(D.workload).length}</div><div class="label">参与人员</div></div>`;
+            <div class="stat stat-clickable stat-stone" id="personnelStat"><div class="num">${Object.keys(D.workload).length}</div><div class="label">参与人员 ▾</div></div>`;
     },
 
     /** 通用展开/收起 */
@@ -190,6 +191,85 @@ const App = {
                 <div style="font-size:12px;color:var(--muted);margin-bottom:4px">共 ${D.open_bugs || 0} 个未关闭缺陷，其中高优/紧急如下</div>
                 <ul>${items}</ul>`;
         });
+    },
+
+    /** 参与人员点击展开 */
+    setupPersonnelClick(D) {
+        const el = document.getElementById('personnelStat');
+        if (!el) return;
+        el.onclick = () => {
+            const listId = 'personnelList';
+            const statId = 'personnelStat';
+            const existing = document.getElementById(listId);
+            if (existing) {
+                const oldChart = Chart.getChart('workloadChart');
+                if (oldChart) oldChart.destroy();
+                existing.remove();
+                const stat = document.getElementById(statId);
+                if (stat) { stat.classList.remove('stat-expanded'); const lb = stat.querySelector('.label'); if (lb) lb.innerHTML = lb.innerHTML.replace('▴', '▾'); }
+                return;
+            }
+            const stat = document.getElementById(statId);
+            if (stat) { stat.classList.add('stat-expanded'); const lb = stat.querySelector('.label'); if (lb) lb.innerHTML = lb.innerHTML.replace('▾', '▴'); }
+
+            const wl = D.workload || {};
+            const entries = Object.entries(wl).sort((a, b) => (b[1].stories + b[1].bugs) - (a[1].stories + a[1].bugs));
+            if (entries.length === 0) {
+                const div = document.createElement('div');
+                div.id = listId;
+                div.className = 'parent-list panel-stone';
+                div.innerHTML = '<div class="parent-list-title">参与人员</div><div style="font-size:12px;color:var(--muted)">无数据</div>';
+                document.getElementById('summary').after(div);
+                return;
+            }
+            const labels = entries.map(e => e[0]);
+            const storyData = entries.map(e => e[1].stories);
+            const bugData = entries.map(e => e[1].bugs);
+
+            const div = document.createElement('div');
+            div.id = listId;
+            div.className = 'parent-list panel-stone';
+            div.innerHTML = `<div class="parent-list-title">参与人员 (${entries.length}人)</div>
+                <div style="height:${Math.max(180, entries.length * 28)}px;position:relative"><canvas id="workloadChart"></canvas></div>
+                <div class="chart-legend">
+                    <span class="legend-item" data-ds="0"><span class="legend-dot" style="background:#2563eb"></span> 需求</span>
+                    <span class="legend-item" data-ds="1"><span class="legend-dot" style="background:#dc2626"></span> 缺陷</span>
+                </div>`;
+            document.getElementById('summary').after(div);
+
+            const ctx = document.getElementById('workloadChart').getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: '需求', data: storyData, backgroundColor: '#2563eb', borderRadius: 2 },
+                        { label: '缺陷', data: bugData, backgroundColor: '#dc2626', borderRadius: 2 }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { stacked: false, ticks: { stepSize: 1 } },
+                        y: { ticks: { font: { size: 11 } } }
+                    }
+                }
+            });
+
+            // 图例点击切换
+            div.querySelectorAll('.legend-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const dsIdx = parseInt(this.dataset.ds);
+                    const meta = chart.getDatasetMeta(dsIdx);
+                    meta.hidden = !meta.hidden;
+                    this.classList.toggle('legend-off', meta.hidden);
+                    chart.update();
+                });
+            });
+        };
     },
 
     /** 智能洞察 */

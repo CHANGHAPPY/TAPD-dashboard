@@ -102,6 +102,7 @@ body {
 .stat-green  { background: var(--green-bg); border: 1px solid var(--green-border); }
 .stat-red    { background: var(--red-bg);   border: 1px solid var(--red-border); }
 .stat-yellow { background: var(--yellow-bg); border: 1px solid var(--yellow-border); }
+.stat-stone  { background: #fafaf9; border: 1px solid #e7e5e4; }
 .stat-clickable { cursor: pointer; user-select: none; }
 .stat-clickable:hover { filter: brightness(0.96); }
 .stat-expanded { box-shadow: 0 0 0 2px var(--blue); }
@@ -116,6 +117,12 @@ body {
 .parent-list.panel-green  { background: var(--green-bg);  border-color: var(--green-border); }
 .parent-list.panel-red    { background: var(--red-bg);    border-color: var(--red-border); }
 .parent-list.panel-yellow { background: var(--yellow-bg); border-color: var(--yellow-border); }
+.parent-list.panel-stone  { background: #fafaf9; border-color: #e7e5e4; }
+
+.chart-legend { display: flex; gap: 16px; justify-content: center; margin-top: 8px; }
+.legend-item { cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; user-select: none; }
+.legend-dot { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+.legend-off { opacity: 0.35; }
 .parent-list-title { font-weight: 700; font-size: 13px; margin-bottom: 6px; }
 .parent-list ul { margin: 0 0 0 16px; }
 .parent-list li { margin: 2px 0; font-size: 13px; }
