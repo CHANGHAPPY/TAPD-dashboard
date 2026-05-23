@@ -75,13 +75,10 @@ const App = {
         this.setupProgressClick(D, it);
         this.setupOverdueClick(D);
         this.setupBugClick(D);
-        // 默认展开（按插入顺序：先完成率，再延期，最后缺陷）
-        ['bugList', 'overdueList', 'progressList'].forEach(id => {
-            if (!document.getElementById(id)) {
-                const el = {progressList: 'progressStat', overdueList: 'overdueStat', bugList: 'bugStat'}[id];
-                document.getElementById(el)?.click();
-            }
-        });
+        // 默认只展开延期
+        if (!document.getElementById('overdueList')) {
+            document.getElementById('overdueStat')?.click();
+        }
         this.renderInsights(D, it);
     },
 
