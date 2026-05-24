@@ -25,10 +25,12 @@ const App = {
         for (const iid in data.data) {
             const d = data.data[iid];
             // 顶层计数键名: ts→total_stories, os→open_stories, 等
-            if (d.ts !== undefined) { d.total_stories = d.ts; d.total_bugs = d.tb; d.open_stories = d.os; d.open_bugs = d.ob; d.overdue_count = d.oc; d.late_closed_count = d.lc; d.severe_count = d.sc; d.unassigned_stories = d.us; d.unassigned_bugs = d.ub; d.status_dist = d.sd; d.parent_story_count = d.ps || 0; d.child_story_count = d.cs || d.os; }
-            // 缺失时回退: parent_story_count→0, child_story_count→total_stories
+            if (d.ts !== undefined) { d.total_stories = d.ts; d.total_bugs = d.tb; d.open_stories = d.os; d.open_bugs = d.ob; d.overdue_count = d.oc; d.late_closed_count = d.lc; d.severe_count = d.sc; d.unassigned_stories = d.us; d.unassigned_bugs = d.ub; d.status_dist = d.sd; d.parent_story_count = d.ps || 0; d.child_story_count = d.cs || 0; }
+            // 缺失时回退
             if (d.parent_story_count === undefined) d.parent_story_count = 0;
-            if (d.child_story_count === undefined) d.child_story_count = d.total_stories || 0;
+            if (d.parent_story_count_all === undefined) d.parent_story_count_all = 0;
+            if (d.child_story_count === undefined) d.child_story_count = 0;
+            if (d.child_story_count_all === undefined) d.child_story_count_all = d.child_story_count;
             if (d.bug_fix_priority === undefined) d.bug_fix_priority = [];
             if (d.bug_fix_priority_count === undefined) d.bug_fix_priority_count = 0;
             if (d.parent_stories === undefined) d.parent_stories = [];
@@ -61,7 +63,8 @@ const App = {
         const result = {
             total_stories: 0, total_bugs: 0, open_stories: 0, open_bugs: 0,
             overdue_count: 0, late_closed_count: 0, severe_count: 0,
-            parent_story_count: 0, parent_story_count_all: 0, child_story_count: 0,
+            parent_story_count: 0, parent_story_count_all: 0,
+            child_story_count: 0, child_story_count_all: 0,
             unassigned_stories: 0, unassigned_bugs: 0,
             bug_fix_priority_count: 0, pending_review_count: 0,
             overdue: [], severe_bugs: [], bug_fix_priority: [], pending_review: [],
@@ -80,6 +83,7 @@ const App = {
             result.parent_story_count += d.parent_story_count || 0;
             result.parent_story_count_all += d.parent_story_count_all || 0;
             result.child_story_count += d.child_story_count || 0;
+            result.child_story_count_all += d.child_story_count_all || 0;
             result.unassigned_stories += d.unassigned_stories || 0;
             result.unassigned_bugs += d.unassigned_bugs || 0;
             result.bug_fix_priority_count += d.bug_fix_priority_count || 0;
@@ -264,15 +268,15 @@ const App = {
 
     /** 摘要数字 */
     renderSummary(D) {
-        const parentAll = D.parent_story_count_all || D.parent_story_count || 0;
-        const parentDone = parentAll - (D.parent_story_count || 0);
-        const childAll = D.total_stories || 0;
-        const childDone = childAll - (D.open_stories || 0);
+        const parentAll = D.parent_story_count_all !== undefined ? D.parent_story_count_all : 0;
+        const parentDone = parentAll - (D.parent_story_count !== undefined ? D.parent_story_count : 0);
+        const childAll = D.child_story_count_all !== undefined ? D.child_story_count_all : 0;
+        const childDone = childAll - (D.child_story_count !== undefined ? D.child_story_count : 0);
         const totalAll = parentAll + childAll;
         const totalDone = parentDone + childDone;
         const pct = totalAll > 0 ? Math.round(totalDone / totalAll * 100) : 0;
-        const parentCount = D.parent_story_count || 0;
-        const childCount = D.child_story_count || D.open_stories || 0;
+        const parentCount = D.parent_story_count !== undefined ? D.parent_story_count : 0;
+        const childCount = D.child_story_count !== undefined ? D.child_story_count : (D.open_stories || 0);
         document.getElementById('summary').innerHTML =
             `<div class="stat stat-sub stat-clickable stat-parent" id="parentStat"><div class="num">${parentCount}</div><div class="label">主需求 ▾</div></div>
             <div class="stat stat-sub stat-clickable stat-lavender" id="childStat"><div class="num">${childCount}</div><div class="label">子需求 ▾</div></div>
@@ -318,10 +322,10 @@ const App = {
         const el = document.getElementById('progressStat');
         if (!el) return;
         el.onclick = () => this.toggleExpand('progressList', 'progressStat', 'panel-green', () => {
-            const parentAll = D.parent_story_count_all || D.parent_story_count || 0;
-            const parentDone = parentAll - (D.parent_story_count || 0);
-            const childAll = D.total_stories || 0;
-            const childDone = childAll - (D.open_stories || 0);
+            const parentAll = D.parent_story_count_all !== undefined ? D.parent_story_count_all : 0;
+            const parentDone = parentAll - (D.parent_story_count !== undefined ? D.parent_story_count : 0);
+            const childAll = D.child_story_count_all !== undefined ? D.child_story_count_all : 0;
+            const childDone = childAll - (D.child_story_count !== undefined ? D.child_story_count : 0);
             const totalAll = parentAll + childAll;
             const totalDone = parentDone + childDone;
             const pct = totalAll > 0 ? Math.round(totalDone / totalAll * 100) : 0;
