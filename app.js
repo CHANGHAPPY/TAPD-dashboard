@@ -519,6 +519,7 @@ const App = {
             const stories = D.stories || [];
             stories.forEach(s => {
                 if (s.is_closed) return;
+                if (s.is_parent) return;
                 let matched = false;
                 for (const cat of CATEGORIES) {
                     if (cat.patterns && cat.patterns.some(p => s.name.includes(p))) {
@@ -528,7 +529,7 @@ const App = {
                 if (!matched) { counts['美术']++; catStories['美术'].push(s); }
             });
             const entries = CATEGORIES.filter(c => counts[c.key] > 0);
-            const totalOpen = stories.filter(s => !s.is_closed).length;
+            const totalOpen = stories.filter(s => !s.is_closed && !s.is_parent).length;
 
             const div = document.createElement('div');
             div.id = listId;
