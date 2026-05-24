@@ -142,8 +142,8 @@ def analyze_iteration(iteration_id):
                 wl[o['owner']] = {'stories': 0, 'bugs': 0, 'late': 0}
             wl[o['owner']]['late'] += 1
 
-    # 需求列表 + 主/子分类（parent_id 为空或 "0" = 主需求，否则 = 子需求）
-    parent_ids_all = set()   # 所有子需求的父ID（用于拉取跨迭代父需求详情）
+    # 需求列表
+    parent_ids_all = set()   # 所有子需求的父ID
     parent_ids_open = set()  # 未关闭子需求的父ID
     story_list = [{
         'id': s['id'], 'name': s['name'][:80],
@@ -153,10 +153,6 @@ def analyze_iteration(iteration_id):
         'due': s.get('due', '') or '', 'priority': s.get('priority_label', '') or '',
         'is_parent': s.get('workitem_type_id') == PARENT_STORY_TYPE
     } for s in stories]
-    top_open = [s for s in stories if s['status'] not in CLOSED_STORY and s.get('workitem_type_id') == PARENT_STORY_TYPE]
-    top_all = [s for s in stories if s.get('workitem_type_id') == PARENT_STORY_TYPE]
-    child_open = [s for s in stories if s['status'] not in CLOSED_STORY and s.get('workitem_type_id') != PARENT_STORY_TYPE]
-    child_all = [s for s in stories if s.get('workitem_type_id') != PARENT_STORY_TYPE]
     for s in stories:
         pid = (s.get('parent_id') or '').strip()
         if pid and pid != '0':
@@ -164,8 +160,14 @@ def analyze_iteration(iteration_id):
             if s['status'] not in CLOSED_STORY:
                 parent_ids_open.add(pid)
 
-    # 拉取父需求详情（批量，每批 30 个，用于跨迭代父需求信息）
-    remote_parents = []
+    # 主/子分类：总单 = 主需求，其他 workitem_type = 子需求
+    top_open = [s for s in stories if s['status'] not in CLOSED_STORY and s.get('workitem_type_id') == PARENT_STORY_TYPE]
+    top_all = [s for s in stories if s.get('workitem_type_id') == PARENT_STORY_TYPE]
+    child_open = [s for s in stories if s['status'] not in CLOSED_STORY and s.get('workitem_type_id') != PARENT_STORY_TYPE]
+    child_all = [s for s in stories if s.get('workitem_type_id') != PARENT_STORY_TYPE]
+
+    # 拉取被引用的父需求详情（跨迭代，批量每批 30 个）
+    remote_parents = {}
     if parent_ids_all:
         pids = list(parent_ids_all)
         for i in range(0, len(pids), 30):
@@ -173,20 +175,30 @@ def analyze_iteration(iteration_id):
             resp = fetch(f'https://api.tapd.cn/stories?workspace_id={WORKSPACE_ID}&id={batch}')
             for item in resp.get('data', []):
                 ps = item['Story']
-                remote_parents.append({
+                remote_parents[ps['id']] = {
                     'id': ps['id'],
                     'name': ps['name'][:80],
                     'owner': (ps.get('owner') or '').strip().rstrip(';'),
                     'is_open': ps['id'] in parent_ids_open
-                })
+                }
 
-    # 构建父需求列表（当前迭代中所有顶层需求，包含尚未建子需求的）
-    parent_stories = [{
-        'id': s['id'],
-        'name': s['name'][:80],
-        'owner': (s.get('owner') or '').strip().rstrip(';'),
-        'is_open': s['status'] not in CLOSED_STORY
-    } for s in top_all]
+    # 构建父需求列表：当前迭代的 总单 + 被子需求引用的跨迭代父需求（去重）
+    all_parents = {}
+    for s in top_all:
+        all_parents[s['id']] = {
+            'id': s['id'],
+            'name': s['name'][:80],
+            'owner': (s.get('owner') or '').strip().rstrip(';'),
+            'is_open': s['status'] not in CLOSED_STORY
+        }
+    for pid, rp in remote_parents.items():
+        if pid not in all_parents:
+            all_parents[pid] = rp
+    parent_stories = list(all_parents.values())
+
+    # 父需求计数：含当前迭代总单 + 跨迭代被引用的父需求
+    parent_open_count = len([p for p in parent_stories if p['is_open']])
+    parent_all_count = len(parent_stories)
 
     # 推进策划验收：父需求下有且仅有【策划验收】和【测试验收】两个未关闭子需求
     parent_children = {}  # parent_id -> [open child stories]
@@ -195,7 +207,7 @@ def analyze_iteration(iteration_id):
         if pid and pid != '0' and s['status'] not in CLOSED_STORY:
             parent_children.setdefault(pid, []).append(s)
     pending_review = []
-    parent_map = {ps['id']: ps for ps in remote_parents}
+    parent_map = {ps['id']: ps for ps in parent_stories}
     for pid, children in parent_children.items():
         if len(children) == 2:
             names = [c['name'] for c in children]
@@ -231,8 +243,8 @@ def analyze_iteration(iteration_id):
         'open_bugs': sum(1 for b in bugs if b['status'] not in CLOSED_BUG),
         'overdue_count': len(overdue), 'late_closed_count': len(late_closed),
         'severe_count': len(severe),
-        'parent_story_count': len(top_open), 'child_story_count': len(child_open),
-        'parent_story_count_all': len(top_all), 'child_story_count_all': len(child_all),
+        'parent_story_count': parent_open_count, 'child_story_count': len(child_open),
+        'parent_story_count_all': parent_all_count, 'child_story_count_all': len(child_all),
         'parent_stories': parent_stories,
         'overdue': overdue, 'late_closed': late_closed, 'severe_bugs': severe,
         'bug_fix_priority': bug_fix_priority, 'bug_fix_priority_count': len(bug_fix_priority),
