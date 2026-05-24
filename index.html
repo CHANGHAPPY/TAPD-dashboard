@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<noscript><div style="padding:40px;text-align:center;font-family:sans-serif">请启用 JavaScript 以查看此面板。</div></noscript>
 
 <div class="topbar">
   <h1>TAPD 项目洞察</h1>
@@ -23,7 +24,9 @@
 </div>
 
 <!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"
+  integrity="sha384-vsrfeLOOY6KuIYKDlmVH5UiBmgIdB1oEf7p01YgWHuqmOHfZr374+odEv96n9tNC"
+  crossorigin="anonymous"></script>
 
 <!-- 预加载数据（由 fetch.py 生成） -->
 <script src="data.js"></script>

@@ -3,6 +3,19 @@
  * 依赖: Chart.js (CDN)
  */
 
+/** 子需求分类规则（patterns 为数组，匹配任一即归入。null 表示兜底分类） */
+const CHILD_CATEGORIES = [
+    { key: '策划需求', patterns: ['文档编辑'], color: '#f97316' },
+    { key: '前端', patterns: ['前端开发', '前端实现', '前端制作'], color: '#3b82f6' },
+    { key: '后端', patterns: ['后端开发', '后端实现', '后端制作'], color: '#6366f1' },
+    { key: 'UI', patterns: ['UI设计'], color: '#ec4899' },
+    { key: '数值', patterns: ['策划配置', '数值配置', '数值设计', '数值需求', '功能测试'], color: '#eab308' },
+    { key: '测试验收', patterns: ['测试验收'], color: '#14b8a6' },
+    { key: '策划验收', patterns: ['策划验收'], color: '#8b5cf6' },
+    { key: '其他', patterns: ['英雄技能'], color: '#78716c' },
+    { key: '美术', patterns: null, color: '#a1a1aa' }
+];
+
 const App = {
     allData: null,
     currentIterId: null,
@@ -495,18 +508,7 @@ const App = {
             const stat = document.getElementById(statId);
             if (stat) { stat.classList.add('stat-expanded'); const lb = stat.querySelector('.label'); if (lb) lb.innerHTML = lb.innerHTML.replace('▾', '▴'); }
 
-            // 子需求分类规则（patterns 为数组，匹配任一即归入）
-            const CATEGORIES = [
-                { key: '策划需求', patterns: ['文档编辑'], color: '#f97316' },
-                { key: '前端', patterns: ['前端开发', '前端实现', '前端制作'], color: '#3b82f6' },
-                { key: '后端', patterns: ['后端开发', '后端实现', '后端制作'], color: '#6366f1' },
-                { key: 'UI', patterns: ['UI设计'], color: '#ec4899' },
-                { key: '数值', patterns: ['策划配置', '数值配置', '数值设计', '数值需求', '功能测试'], color: '#eab308' },
-                { key: '测试验收', patterns: ['测试验收'], color: '#14b8a6' },
-                { key: '策划验收', patterns: ['策划验收'], color: '#8b5cf6' },
-                { key: '其他', patterns: ['英雄技能'], color: '#78716c' },
-                { key: '美术', patterns: null, color: '#a1a1aa' }
-            ];
+            const CATEGORIES = CHILD_CATEGORIES;
             const counts = {};
             const catStories = {};
             CATEGORIES.forEach(c => { counts[c.key] = 0; catStories[c.key] = []; });
@@ -696,5 +698,22 @@ const Utils = {
 /** HTML 转义简写 */
 function esc(s) { return Utils.esc(s); }
 
-/** 初始化 */
-window.onload = () => App.init(PRELOAD_DATA);
+window.onload = () => {
+    if (typeof PRELOAD_DATA === 'undefined') {
+        document.getElementById('alerts').innerHTML =
+            '<div class="alert alert-red"><div class="alert-title">数据加载失败</div><div class="alert-body">data.js 未加载。请在终端运行 <code>python3 build.py</code> 生成数据。</div></div>';
+        return;
+    }
+    if (typeof Chart === 'undefined') {
+        document.getElementById('alerts').innerHTML =
+            '<div class="alert alert-red"><div class="alert-title">依赖加载失败</div><div class="alert-body">Chart.js 未加载。请检查网络连接后刷新页面。</div></div>';
+        return;
+    }
+    try {
+        App.init(PRELOAD_DATA);
+    } catch (e) {
+        document.getElementById('alerts').innerHTML =
+            `<div class="alert alert-red"><div class="alert-title">初始化失败</div><div class="alert-body">${Utils.esc(e.message)}<br><small>请检查数据格式是否正确。</small></div></div>`;
+        console.error(e);
+    }
+};

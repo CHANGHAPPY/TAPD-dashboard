@@ -15,14 +15,15 @@ if result.returncode != 0:
     print(f'拉取失败:\n{result.stderr}')
     sys.exit(1)
 
-# 提取 JSON（跳过日志行）
-lines = result.stdout.strip().split('\n')
-json_lines = [l for l in lines if l.startswith('{') or l.startswith('[')]
-if not json_lines:
-    # 可能是单行 JSON
-    json_str = result.stdout.strip()
+# 提取 JSON（使用 sentinel 分隔符）
+parts = result.stdout.split('__JSON_START__')
+if len(parts) >= 2:
+    json_str = parts[-1].strip()
 else:
-    json_str = json_lines[-1]  # 取最后一个 JSON
+    # 向后兼容：按行前缀提取
+    lines = result.stdout.strip().split('\n')
+    json_lines = [l for l in lines if l.startswith('{') or l.startswith('[')]
+    json_str = json_lines[-1] if json_lines else result.stdout.strip()
 
 try:
     data = json.loads(json_str)
@@ -42,9 +43,9 @@ with open(out_path, 'w') as f:
     json.dump(data, f, ensure_ascii=False)
     f.write(';')
 
-total_stories = sum(d['total_stories'] for d in data['data'].values()) if 'data' in data else sum(d['ts'] for d in data['data'].values())
+total_stories = sum(d['total_stories'] for d in data['data'].values())
 size = os.path.getsize(out_path)
 print(f'已生成 data.js ({size // 1024}KB)')
-print(f'迭代数: {len(data["iterations"]) if "iterations" in data else len(data["its"])}')
+print(f'迭代数: {len(data["iterations"])}')
 print(f'总需求: {total_stories}')
 print(f'运行 python3 server.py 预览')

@@ -5,6 +5,7 @@ import os
 import sys
 import subprocess
 import json
+import socketserver
 
 PORT = 8080
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -35,8 +36,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         else:
             self.send_error(404)
 
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+
     def log_message(self, format, *args):
         print(f'  {args[0]}')
+
+
+class ThreadingHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    daemon_threads = True
+
 
 if __name__ == '__main__':
     print(f'''
@@ -44,7 +57,7 @@ if __name__ == '__main__':
   打开浏览器访问: http://localhost:{PORT}
   按 Ctrl+C 停止
 ''')
-    with http.server.HTTPServer(('', PORT), Handler) as httpd:
+    with ThreadingHTTPServer(('', PORT), Handler) as httpd:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:

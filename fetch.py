@@ -6,6 +6,7 @@ TAPD 项目监控 - 数据拉取与分析模块
 
 import json, subprocess, datetime, sys, os
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # 从外部配置文件读取认证凭据
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'auth.json')
@@ -61,7 +62,9 @@ def fetch_paginated(base_url):
 def get_iterations():
     """获取所有 open 状态的迭代（翻页拉全）"""
     items = fetch_paginated(f'https://api.tapd.cn/iterations?workspace_id={WORKSPACE_ID}')
-    return [x['Iteration'] for x in items if x['Iteration'].get('status') == 'open']
+    keep_fields = {'id', 'name', 'startdate', 'enddate', 'status'}
+    return [{k: v for k, v in x['Iteration'].items() if k in keep_fields}
+            for x in items if x['Iteration'].get('status') == 'open']
 
 
 def analyze_iteration(iteration_id):
@@ -98,8 +101,8 @@ def analyze_iteration(iteration_id):
                             'due': s['due'], 'completed': s['completed'][:10],
                             'status': STORY_STATUS.get(s['status'], s['status'])
                         })
-            except:
-                pass
+            except (ValueError, TypeError) as e:
+                print(f'  日期解析失败 story={s.get("id")}: {e}', file=sys.stderr)
     overdue.sort(key=lambda x: x['due'])
     bug_fix_priority.sort(key=lambda x: x['due'])
 
@@ -230,27 +233,35 @@ def analyze_iteration(iteration_id):
 
 
 def fetch_all():
-    """拉取所有活跃迭代的数据"""
+    """拉取所有活跃迭代的数据（并行）"""
     iterations = get_iterations()
     print(f'拉取 {len(iterations)} 个迭代...')
     data = {}
-    for it in iterations:
-        iid = it['id']
-        print(f'  {it["name"]}...')
-        data[iid] = analyze_iteration(iid)
-        print(f'    {data[iid]["total_stories"]}需求 {data[iid]["total_bugs"]}缺陷')
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {executor.submit(analyze_iteration, it['id']): it for it in iterations}
+        for future in as_completed(futures):
+            it = futures[future]
+            iid = it['id']
+            try:
+                data[iid] = future.result()
+                print(f'  {it["name"]}: {data[iid]["total_stories"]}需求 {data[iid]["total_bugs"]}缺陷')
+            except Exception as e:
+                print(f'  {it["name"]}: 拉取失败 - {e}', file=sys.stderr)
     return {'iterations': iterations, 'data': data}
 
 
 if __name__ == '__main__':
     if '--iterations-only' in sys.argv:
         its = get_iterations()
+        print('__JSON_START__')
         print(json.dumps(its, ensure_ascii=False, indent=2))
     elif '--iteration-id' in sys.argv:
         idx = sys.argv.index('--iteration-id')
         iid = sys.argv[idx + 1]
         result = analyze_iteration(iid)
+        print('__JSON_START__')
         print(json.dumps(result, ensure_ascii=False))
     else:
         result = fetch_all()
+        print('__JSON_START__')
         print(json.dumps(result, ensure_ascii=False))
