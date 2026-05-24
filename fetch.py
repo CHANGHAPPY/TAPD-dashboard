@@ -26,6 +26,7 @@ BUG_STATUS = {
 }
 CLOSED_STORY = {'resolved', 'status_1'}
 CLOSED_BUG = {'closed', 'resolved', 'rejected'}
+PARENT_STORY_TYPE = '1166481329001000137'  # 总单 = 主需求
 
 
 def fetch(url, retries=2):
@@ -150,12 +151,12 @@ def analyze_iteration(iteration_id):
         'status': STORY_STATUS.get(s['status'], s['status']),
         'is_closed': s['status'] in CLOSED_STORY,
         'due': s.get('due', '') or '', 'priority': s.get('priority_label', '') or '',
-        'is_parent': not (s.get('parent_id') or '').strip() or (s.get('parent_id') or '').strip() == '0'
+        'is_parent': s.get('workitem_type_id') == PARENT_STORY_TYPE
     } for s in stories]
-    top_open = [s for s in stories if s['status'] not in CLOSED_STORY and (not (s.get('parent_id') or '').strip() or (s.get('parent_id') or '').strip() == '0')]
-    top_all = [s for s in stories if not (s.get('parent_id') or '').strip() or (s.get('parent_id') or '').strip() == '0']
-    child_open = [s for s in stories if s['status'] not in CLOSED_STORY and (s.get('parent_id') or '').strip() and (s.get('parent_id') or '').strip() != '0']
-    child_all = [s for s in stories if (s.get('parent_id') or '').strip() and (s.get('parent_id') or '').strip() != '0']
+    top_open = [s for s in stories if s['status'] not in CLOSED_STORY and s.get('workitem_type_id') == PARENT_STORY_TYPE]
+    top_all = [s for s in stories if s.get('workitem_type_id') == PARENT_STORY_TYPE]
+    child_open = [s for s in stories if s['status'] not in CLOSED_STORY and s.get('workitem_type_id') != PARENT_STORY_TYPE]
+    child_all = [s for s in stories if s.get('workitem_type_id') != PARENT_STORY_TYPE]
     for s in stories:
         pid = (s.get('parent_id') or '').strip()
         if pid and pid != '0':
